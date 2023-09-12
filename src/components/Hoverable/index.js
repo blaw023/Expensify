@@ -1,5 +1,5 @@
 import _ from 'underscore';
-import React, {Component} from 'react';
+import React, {Component, useEffect, useState} from 'react';
 import {propTypes, defaultProps} from './hoverablePropTypes';
 import * as DeviceCapabilities from '../../libs/DeviceCapabilities';
 
@@ -8,7 +8,7 @@ import * as DeviceCapabilities from '../../libs/DeviceCapabilities';
  * because nesting Pressables causes issues where the hovered state of the child cannot be easily propagated to the
  * parent. https://github.com/necolas/react-native-web/issues/1875
  */
-class Hoverable extends Component {
+/* class Hoverable extends Component {
     constructor(props) {
         super(props);
 
@@ -40,14 +40,14 @@ class Hoverable extends Component {
     componentWillUnmount() {
         document.removeEventListener('visibilitychange', this.handleVisibilityChange);
         document.removeEventListener('mouseover', this.checkHover);
-    }
+    } */
 
     /**
      * Sets the hover state of this component to true and execute the onHoverIn callback.
      *
      * @param {Boolean} isHovered - Whether or not this component is hovered.
      */
-    setIsHovered(isHovered) {
+    /* setIsHovered(isHovered) {
         if (this.props.disabled) {
             return;
         }
@@ -55,7 +55,7 @@ class Hoverable extends Component {
         if (isHovered !== this.state.isHovered) {
             this.setState({isHovered}, isHovered ? this.props.onHoverIn : this.props.onHoverOut);
         }
-    }
+    } */
 
     /**
      * Checks the hover state of a component and updates it based on the event target.
@@ -63,7 +63,7 @@ class Hoverable extends Component {
      * such as when an element is removed before the mouseleave event is triggered.
      * @param {Event} e - The hover event object.
      */
-    checkHover(e) {
+    /* checkHover(e) {
         if (!this.wrapperView || !this.state.isHovered) {
             return;
         }
@@ -139,7 +139,74 @@ class Hoverable extends Component {
             },
         });
     }
-}
+} */
+
+
+function Hoverable(props) {
+   const [isHovered, setIsHovered] = useState(false);
+   let wrapperView = null;
+
+   /**
+    * Sets the hover state of this component to true and execute the onHoverIn callback.
+    * @param {Boolean} isCurrentlyHovered - Whether or not this component is hovered.
+    */
+   const handleIsHovered = (isCurrentlyHovered) => {
+      if (props.disabled) {
+        return;
+      }
+
+      if (isHovered !== isCurrentlyHovered) {
+        setIsHovered(isHovered ? props.onHoverIn : props.onHoverOut);
+      }
+    }
+
+    /**
+     * Checks the hover state of a component and updates it based on the event target.
+     * This is necessary to handle cases where the hover state might get stuck due to an unreliable mouseleave trigger,
+     * such as when an element is removed before the mouseleave event is triggered.
+     * @param {Event} e - The hover event object.
+     */
+    const checkHover = (e) => {
+      if (wrapperView || !isHovered) {
+        return;
+      }
+
+      if (wrapperView.contains(e.target)) {
+        return;
+      }
+
+      setIsHovered(false);
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'hidden') {
+        return;
+      }
+
+      setIsHovered(false);
+    }
+
+    const attachEventListeners = () => {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      document.addEventListener('mouseover', checkHover);
+    }
+
+    const removeEventListeners = () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('mouseover', checkHover);
+    }
+
+    useEffect(() => {
+     attachEventListeners()
+      return () => {
+        removeEventListeners()
+      }
+    }, [])
+
+    return(
+        <div></div>
+    )
+};
 
 Hoverable.propTypes = propTypes;
 Hoverable.defaultProps = defaultProps;
